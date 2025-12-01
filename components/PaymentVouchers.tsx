@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Expense, Society } from '../types';
 import { EXPENSE_CATEGORIES } from '../constants';
-import { Plus, Download, Printer, Banknote, Building, FileText } from 'lucide-react';
+import { Plus, Download, Printer, Banknote, Building, FileText, BookOpen } from 'lucide-react';
 
 interface PaymentVouchersProps {
   expenses: Expense[];
@@ -17,7 +17,7 @@ declare global {
 }
 
 const PaymentVouchers: React.FC<PaymentVouchersProps> = ({ expenses, activeSociety, onAddExpense }) => {
-  const [activeTab, setActiveTab] = useState<'CASH' | 'BANK'>('CASH');
+  const [activeTab, setActiveTab] = useState<'CASH' | 'BANK' | 'JOURNAL'>('CASH');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<Expense | null>(null);
@@ -30,12 +30,17 @@ const PaymentVouchers: React.FC<PaymentVouchersProps> = ({ expenses, activeSocie
 
   const filteredExpenses = expenses.filter(e => {
       if (activeTab === 'CASH') return e.paymentMode === 'Cash';
+      if (activeTab === 'JOURNAL') return e.paymentMode === 'Journal';
       return e.paymentMode === 'Cheque' || e.paymentMode === 'Online';
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const handleOpenModal = () => {
+      let defaultMode = 'Cash';
+      if (activeTab === 'BANK') defaultMode = 'Cheque';
+      if (activeTab === 'JOURNAL') defaultMode = 'Journal';
+
       setFormData({
-        paymentMode: activeTab === 'CASH' ? 'Cash' : 'Cheque',
+        paymentMode: defaultMode as any,
         amount: 0,
         date: new Date().toISOString().split('T')[0]
       });
@@ -88,23 +93,29 @@ const PaymentVouchers: React.FC<PaymentVouchersProps> = ({ expenses, activeSocie
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <h2 className="text-xl font-semibold text-slate-800">Payment Vouchers</h2>
-           <p className="text-sm text-slate-500 mt-1">Create and print formal Cash and Bank vouchers for expenses.</p>
+           <h2 className="text-xl font-semibold text-slate-800">Voucher Management</h2>
+           <p className="text-sm text-slate-500 mt-1">Create and print formal Cash, Bank, and Journal vouchers.</p>
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-slate-200 pb-1">
+      <div className="flex gap-2 border-b border-slate-200 pb-1 flex-wrap">
           <button 
             onClick={() => setActiveTab('CASH')}
-            className={`px-6 py-2 text-sm font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'CASH' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+            className={`px-4 md:px-6 py-2 text-sm font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'CASH' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
           >
               <Banknote size={18} /> Cash Vouchers
           </button>
           <button 
             onClick={() => setActiveTab('BANK')}
-            className={`px-6 py-2 text-sm font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'BANK' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+            className={`px-4 md:px-6 py-2 text-sm font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'BANK' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
           >
-              <Building size={18} /> Bank / Cheque Vouchers
+              <Building size={18} /> Bank Vouchers
+          </button>
+          <button 
+            onClick={() => setActiveTab('JOURNAL')}
+            className={`px-4 md:px-6 py-2 text-sm font-bold rounded-t-lg transition-colors flex items-center gap-2 ${activeTab === 'JOURNAL' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+          >
+              <BookOpen size={18} /> Journal Vouchers
           </button>
       </div>
 
@@ -117,7 +128,7 @@ const PaymentVouchers: React.FC<PaymentVouchersProps> = ({ expenses, activeSocie
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 shadow-md"
            >
             <Plus size={18} />
-            Create {activeTab === 'CASH' ? 'Cash' : 'Bank'} Voucher
+            Create {activeTab === 'CASH' ? 'Cash' : activeTab === 'BANK' ? 'Bank' : 'Journal'} Voucher
            </button>
       </div>
 
@@ -131,6 +142,10 @@ const PaymentVouchers: React.FC<PaymentVouchersProps> = ({ expenses, activeSocie
                       <span className="font-bold text-lg text-slate-800">₹{voucher.amount.toFixed(2)}</span>
                   </div>
                   <h3 className="font-semibold text-slate-800 mb-1">{voucher.vendor}</h3>
+                  <div className="flex gap-2 mb-2">
+                      <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded">{voucher.category}</span>
+                      {voucher.paymentMode === 'Journal' && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded font-bold">JV</span>}
+                  </div>
                   <p className="text-sm text-slate-500 mb-4 line-clamp-2">{voucher.description}</p>
                   
                   <div className="flex justify-between items-center text-xs text-slate-500 border-t border-slate-100 pt-3">
@@ -155,10 +170,12 @@ const PaymentVouchers: React.FC<PaymentVouchersProps> = ({ expenses, activeSocie
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-xl font-bold mb-4">Create {activeTab === 'CASH' ? 'Cash' : 'Bank'} Voucher</h2>
+            <h2 className="text-xl font-bold mb-4">Create {activeTab === 'CASH' ? 'Cash' : activeTab === 'BANK' ? 'Bank' : 'Journal'} Voucher</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Payee Name (Vendor)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {activeTab === 'JOURNAL' ? 'Credit Ledger (Vendor/Payable)' : 'Payee Name (Vendor)'}
+                </label>
                 <input 
                   type="text" 
                   required
@@ -191,7 +208,9 @@ const PaymentVouchers: React.FC<PaymentVouchersProps> = ({ expenses, activeSocie
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {activeTab === 'JOURNAL' ? 'Debit Ledger (Category)' : 'Category'}
+                </label>
                 <select 
                   className="w-full p-2 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-indigo-500"
                   required
@@ -205,7 +224,9 @@ const PaymentVouchers: React.FC<PaymentVouchersProps> = ({ expenses, activeSocie
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Description / Towards</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {activeTab === 'JOURNAL' ? 'Narration' : 'Description / Towards'}
+                </label>
                 <textarea 
                   rows={2}
                   className="w-full p-2 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-indigo-500"
@@ -300,7 +321,9 @@ const PaymentVouchers: React.FC<PaymentVouchersProps> = ({ expenses, activeSocie
                               <h1 className="text-2xl font-bold uppercase tracking-widest">{activeSociety.name}</h1>
                               <p className="text-sm italic">{activeSociety.address}</p>
                               <div className="mt-4 inline-block bg-slate-800 text-white px-6 py-1 font-bold text-lg uppercase">
-                                  {selectedVoucher.paymentMode === 'Cash' ? 'Cash Voucher' : 'Bank Payment Voucher'}
+                                  {selectedVoucher.paymentMode === 'Cash' ? 'Cash Voucher' : 
+                                   selectedVoucher.paymentMode === 'Journal' ? 'Journal Voucher' : 
+                                   'Bank Payment Voucher'}
                               </div>
                           </div>
 
@@ -309,42 +332,60 @@ const PaymentVouchers: React.FC<PaymentVouchersProps> = ({ expenses, activeSocie
                               <p className="font-bold">Date: <span className="font-normal border-b border-dotted border-slate-400 px-2">{selectedVoucher.date}</span></p>
                           </div>
 
-                          <div className="mt-8 space-y-6 text-lg leading-loose">
-                              <p>
-                                  Paid to Mr./Ms./M/s 
-                                  <span className="font-bold border-b border-dotted border-slate-400 px-4 ml-2 w-full inline-block">{selectedVoucher.vendor}</span>
-                              </p>
-                              <p>
-                                  A sum of Rupees 
-                                  <span className="font-bold border-b border-dotted border-slate-400 px-4 ml-2 inline-block">₹ {selectedVoucher.amount.toLocaleString()} /-</span>
-                              </p>
-                              
-                              {selectedVoucher.paymentMode !== 'Cash' && (
+                          {selectedVoucher.paymentMode === 'Journal' ? (
+                              <div className="mt-8 space-y-6 text-lg leading-loose">
+                                  <div className="flex justify-between border-b border-dotted border-slate-400 pb-2">
+                                      <span><strong>Debit:</strong> {selectedVoucher.category}</span>
+                                      <span>₹ {selectedVoucher.amount.toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between border-b border-dotted border-slate-400 pb-2">
+                                      <span><strong>Credit:</strong> {selectedVoucher.vendor}</span>
+                                      <span>₹ {selectedVoucher.amount.toLocaleString()}</span>
+                                  </div>
+                                  <div className="pt-4">
+                                      <p><strong>Narration:</strong> {selectedVoucher.description}</p>
+                                  </div>
+                              </div>
+                          ) : (
+                              <div className="mt-8 space-y-6 text-lg leading-loose">
                                   <p>
-                                      By Cheque No / Ref 
-                                      <span className="font-bold border-b border-dotted border-slate-400 px-4 mx-2">{selectedVoucher.referenceNo || '________'}</span>
-                                      dated 
-                                      <span className="font-bold border-b border-dotted border-slate-400 px-4 mx-2">{selectedVoucher.date}</span>
-                                      Drawn on 
-                                      <span className="font-bold border-b border-dotted border-slate-400 px-4 mx-2">{selectedVoucher.bankName || '________'}</span>
+                                      Paid to Mr./Ms./M/s 
+                                      <span className="font-bold border-b border-dotted border-slate-400 px-4 ml-2 w-full inline-block">{selectedVoucher.vendor}</span>
                                   </p>
-                              )}
+                                  <p>
+                                      A sum of Rupees 
+                                      <span className="font-bold border-b border-dotted border-slate-400 px-4 ml-2 inline-block">₹ {selectedVoucher.amount.toLocaleString()} /-</span>
+                                  </p>
+                                  
+                                  {selectedVoucher.paymentMode !== 'Cash' && (
+                                      <p>
+                                          By Cheque No / Ref 
+                                          <span className="font-bold border-b border-dotted border-slate-400 px-4 mx-2">{selectedVoucher.referenceNo || '________'}</span>
+                                          dated 
+                                          <span className="font-bold border-b border-dotted border-slate-400 px-4 mx-2">{selectedVoucher.date}</span>
+                                          Drawn on 
+                                          <span className="font-bold border-b border-dotted border-slate-400 px-4 mx-2">{selectedVoucher.bankName || '________'}</span>
+                                      </p>
+                                  )}
 
-                              <p>
-                                  Towards 
-                                  <span className="font-bold border-b border-dotted border-slate-400 px-4 ml-2 inline-block w-full">{selectedVoucher.description} ({selectedVoucher.category})</span>
-                              </p>
-                          </div>
+                                  <p>
+                                      Towards 
+                                      <span className="font-bold border-b border-dotted border-slate-400 px-4 ml-2 inline-block w-full">{selectedVoucher.description} ({selectedVoucher.category})</span>
+                                  </p>
+                              </div>
+                          )}
 
                           <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end pt-12">
                               <div className="text-center">
                                   <div className="border-t border-slate-400 w-32"></div>
                                   <p className="text-sm font-bold mt-1">Prepared By</p>
                               </div>
-                              <div className="text-center">
-                                  <div className="border-t border-slate-400 w-32"></div>
-                                  <p className="text-sm font-bold mt-1">Receiver's Sign</p>
-                              </div>
+                              {selectedVoucher.paymentMode !== 'Journal' && (
+                                  <div className="text-center">
+                                      <div className="border-t border-slate-400 w-32"></div>
+                                      <p className="text-sm font-bold mt-1">Receiver's Sign</p>
+                                  </div>
+                              )}
                               <div className="text-center">
                                   <div className="border-t border-slate-400 w-32"></div>
                                   <p className="text-sm font-bold mt-1">Authorised Signatory</p>

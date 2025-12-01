@@ -99,7 +99,7 @@ export interface Expense {
   description: string;
   vendor: string;
   // Voucher Details
-  paymentMode?: 'Cash' | 'Cheque' | 'Online';
+  paymentMode?: 'Cash' | 'Cheque' | 'Online' | 'Journal';
   referenceNo?: string; // Cheque No or Txn ID
   bankName?: string;
 }
@@ -113,6 +113,9 @@ export interface Income {
     description: string;
     payer: string;
     mode: 'Bank Transfer' | 'Cheque' | 'Cash';
+    // Voucher Details
+    referenceNo?: string;
+    bankName?: string;
 }
 
 export interface Notice {
@@ -136,4 +139,4 @@ export interface MeetingMinutes {
     actionItems: string;
 }
 
-export type ViewState = 'DASHBOARD' | 'SOCIETIES' | 'RESIDENTS' | 'BILLING' | 'RECEIPTS' | 'INCOME' | 'EXPENSES' | 'VOUCHERS' | 'STATEMENTS' | 'BANK_RECONCILIATION' | 'STATUTORY_REGISTERS' | 'REPORTS' | 'MINUTES' | 'NOTICES' | 'AI_INSIGHTS';
+export type ViewState = 'DASHBOARD' | 'SOCIETIES' | 'RESIDENTS' | 'BILLING' | 'RECEIPTS' | 'INCOME' | 'RECEIPT_VOUCHERS' | 'EXPENSES' | 'VOUCHERS' | 'STATEMENTS' | 'BANK_RECONCILIATION' | 'STATUTORY_REGISTERS' | 'REPORTS' | 'MINUTES' | 'NOTICES' | 'AI_INSIGHTS';
